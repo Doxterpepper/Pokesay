@@ -19,6 +19,35 @@ fn read_pokemon(file: &str) -> Vec<Pokemon> {
   serde_json::from_reader(br).expect("Error parsing json file")
 }
 
+fn find_pokemon(pokemon: &Vec<Pokemon>, search_string: String) -> Option<&Pokemon> {
+  if search_string == "" {
+    return None;
+  }
+
+  for poke in pokemon {
+    if poke.pokemon == search_string {
+      return Some(&poke);
+    }
+  }
+
+  None
+}
+
+fn select_random_pokemon(pokemon: &Vec<Pokemon>) -> &Pokemon {
+  let between = Range::new(0, pokemon.len());
+  let mut rng = rand::thread_rng();
+  &pokemon[between.ind_sample(&mut rng)]
+}
+
+fn select_pokemon(pokemon: &Vec<Pokemon>, user_input: String) -> &Pokemon {
+  // find_pokemon will return None if user_input is empty
+  if let Some(pokemon) = find_pokemon(pokemon, user_input) {
+    pokemon
+  } else {
+    select_random_pokemon(pokemon)
+  }
+}
+
 fn main() {
   let matches = App::new("pokesay")
     .version("1.0")
@@ -47,11 +76,14 @@ fn main() {
   let message = matches.value_of("message")
     .unwrap_or("");
 
+  // Empty string will default to random pokemon
+  let user_pokemon_selection = matches.value_of("pokemon")
+    .unwrap_or("");
+
   let pokemon = read_pokemon(resource_file);
 
-  let between = Range::new(0, pokemon.len());
-  let mut rng = rand::thread_rng();
-  let selected_pokemon = &pokemon[between.ind_sample(&mut rng)];
+  let selected_pokemon = select_pokemon(&pokemon, String::from(user_pokemon_selection));
+
   println!("{}", selected_pokemon.say);
   println!("{}", selected_pokemon.pokemon);
   println!("{}", message);
